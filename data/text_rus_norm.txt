@@ -1901,6 +1901,7 @@
 		Kusti siren perelomala,
 		Po tsvetnikam letya k ruchyu,
 		I, zadikhayas, na skamyu
+		Upala...
 		"Zdes on! zdes Yevgenii!
 		O Bozhe! chto podumal on!"
 		V nei serdtse, polnoe muchenii,
@@ -5473,6 +5474,7 @@
 		I purpur zakata slivaetsya s zlatom vostoka:
 		Kak budto dennitsa za vecherom sledom vivodit
 		Rumyanoe utro. - Bila to godina zlataya.
+		Kak letnie dni pokhishchayut vladichestvo nochi;
 		Kak vzor inozemtsa na severnom nebe plenyaet
 		Siyane volshebnoe teni i sladkogo sveta,
 		Kakim nikogda ne ukrasheno nebo poludnya;
@@ -5486,7 +5488,9 @@
 		Rosa opustilas; ...........................
 		Neva ne kolikhnet; razekhalis gosti gradskie;
 		Ni glasa na brege, ni zibi na vlage, vse tikho;
+		Lish izredka gul ot mostov probezhit nad vodoyu;
 		Lish krik protyazhennii iz dalnei promchitsya
+		derevni,
 		Vse spit. ...........................
 		Vyav boginyu blagosklonnu
 		Zrit vostorzhennii piit,

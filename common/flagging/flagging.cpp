@@ -3,7 +3,7 @@
 #include <string.h>
 #include "flagging.h"
 
-bool run_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
+bool run_setup(int argc, char** argv, StartConfig* run_conds)
 {
     const char* optstring = " -i: -o: -s: --input_f: --output_f: --sorting: ";
     // !!! always starts and ends with ' ', short options must be before long ones, do not use ':' in option names
@@ -13,9 +13,9 @@ bool run_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
         return 0;
     }
 
-    struct getopt_out opt_out = {.optind = 1};
+    getopt_out opt_out = {.optind = 1};
 
-    enum GETOPT_RETS opt_flag = ARGV_END;
+    GetoptResult opt_flag = ARGV_END;
 
     while ((opt_flag = getopt_custom(argc, argv, optstring, &opt_out)) != ARGV_END)
     {
@@ -23,18 +23,18 @@ bool run_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
             run_conds->flagging_error = 1;
     }
 
-    if (!run_conds->input_file_selected)
+    if (!run_conds->is_input_file_selected)
     {
-        run_conds->input_file = (const char*)"data/text_rus_norm.txt";
+        run_conds->input_file = DEFAULT_INPUT_FILE;
     }
-    if (!run_conds->output_file_selected)
+    if (!run_conds->is_output_file_selected)
     {
-        run_conds->output_file = (const char*)"data/output.txt";
+        run_conds->output_file = DEFAULT_OUTPUT_FILE;
     }
     if (run_conds->sorts_n == 0)
     {
         run_conds->sorts_n = 1;
-        run_conds->sorts[0] = UNTOUCHED;
+        run_conds->sorts[0] = UNSORTED;
     }
 
     if (run_conds->flagging_error)
@@ -43,14 +43,15 @@ bool run_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
     return 1;
 }
 
-bool normalizer_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
+// FUCK: add one more sources and makefile
+bool normalizer_setup(int argc, char** argv, StartConfig* run_conds)
 {
     const char* optstring = " -i: -o: --input_f: --output_f: ";
     // !!! always starts and ends with ' ', short options must be before long ones, do not use ':' in option names
 
-    struct getopt_out opt_out = {.optind = 1};
+    getopt_out opt_out = {.optind = 1};
 
-    enum GETOPT_RETS opt_flag = ARGV_END;
+    GetoptResult opt_flag = ARGV_END;
 
     while ((opt_flag = getopt_custom(argc, argv, optstring, &opt_out)) != ARGV_END)
     {
@@ -58,14 +59,14 @@ bool normalizer_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
             run_conds->flagging_error = 1;
     }
 
-    if (!run_conds->input_file_selected)
+    if (!run_conds->is_input_file_selected)
     {
-        run_conds->input_file = (const char*)"data/text_rus.txt";
+        run_conds->input_file = (const char*)DEFAULT_INPUT_FILE;
     }
 
-    if (!run_conds->output_file_selected)
+    if (!run_conds->is_output_file_selected)
     {
-        run_conds->output_file = (const char*)"data/text_rus_norm.txt";
+        run_conds->output_file = (const char*)DEFAULT_OUTPUT_FILE;
     }
 
     if (run_conds->flagging_error)
@@ -74,7 +75,8 @@ bool normalizer_setup(int argc, char** argv, RUN_CONDITIONS* run_conds)
     return 1;
 }
 
-GETOPT_RETS getopt_custom(int argc, char ** const argv, const char *optstring, getopt_out* opt_out)
+// FUCK: add common + makefile (static lib)
+GetoptResult getopt_custom(int argc, char ** const argv, const char *optstring, getopt_out* opt_out)
 {
     if (opt_out->optind > argc - 1)
         return ARGV_END;
@@ -104,7 +106,7 @@ GETOPT_RETS getopt_custom(int argc, char ** const argv, const char *optstring, g
     return OPT_FOUND;
 }
 
-GETOPT_RETS getoptarg(int argc, char ** const argv, getopt_out* opt_out)
+GetoptResult getoptarg(int argc, char ** const argv, getopt_out* opt_out)
 {
     if (opt_out->optind > argc - 1)
         return EXPECTED_ARG;
@@ -117,7 +119,8 @@ GETOPT_RETS getoptarg(int argc, char ** const argv, getopt_out* opt_out)
     return OPT_FOUND;
 }
 
-bool set_run_flags(GETOPT_RETS opt_flag, getopt_out opt_out, RUN_CONDITIONS *run_conds)
+// FUCK: COPY
+bool set_run_flags(GetoptResult opt_flag, getopt_out opt_out, StartConfig *run_conds)
 {
     switch (opt_flag)
     {
@@ -159,17 +162,19 @@ bool set_run_flags(GETOPT_RETS opt_flag, getopt_out opt_out, RUN_CONDITIONS *run
         case ARGV_END:
         default:
         {
-            assert(0); // incorrect opt_flag
+            assert(0 && "incorrect opt_flag");
         }
 
     }
 }
 
-bool opt_proccessor (getopt_out opt_out, RUN_CONDITIONS *run_conds)
+// FUCK: copy
+bool opt_proccessor (getopt_out opt_out, StartConfig *run_conds)
 {
+    // FUCK: think about it
     if (!strcmp(opt_out.opt, "-s") || !strcmp(opt_out.opt, "--sorting"))
     {
-        if (run_conds->sorts_n == 10)
+        if (run_conds->sorts_n == MAX_N_SORTS)
         {
             printf("Too many sorts selected! (Use 0~10)\n");
             return 0;
@@ -188,9 +193,9 @@ bool opt_proccessor (getopt_out opt_out, RUN_CONDITIONS *run_conds)
             return 1;
         }
 
-        if (!strcmp(opt_out.optarg, "untouched"))
+        if (!strcmp(opt_out.optarg, "unsorted"))
         {
-            run_conds->sorts[run_conds->sorts_n - 1] = UNTOUCHED;
+            run_conds->sorts[run_conds->sorts_n - 1] = UNSORTED;
             return 1;
         }
 
@@ -200,7 +205,7 @@ bool opt_proccessor (getopt_out opt_out, RUN_CONDITIONS *run_conds)
 
     if (!strcmp(opt_out.opt, "-i") || !strcmp(opt_out.opt, "--input_f"))
     {
-        if (run_conds->input_file_selected == true)
+        if (run_conds->is_input_file_selected)
         {
             printf("Can not select multiple files for input! (Do not use multiple -i, --input_f)\n");
             return 0;
@@ -212,7 +217,7 @@ bool opt_proccessor (getopt_out opt_out, RUN_CONDITIONS *run_conds)
             return 0;
         }
 
-        run_conds->input_file_selected = true;
+        run_conds->is_input_file_selected = true;
         run_conds->input_file = opt_out.optarg;
 
         return 1;
@@ -220,7 +225,7 @@ bool opt_proccessor (getopt_out opt_out, RUN_CONDITIONS *run_conds)
 
     if (!strcmp(opt_out.opt, "-o") || !strcmp(opt_out.opt, "--output_f"))
     {
-        if (run_conds->output_file_selected == true)
+        if (run_conds->is_output_file_selected)
         {
             printf("Can not select multiple files for output! (Do not use multiple -o, --output_f)\n");
             return 0;
@@ -232,20 +237,21 @@ bool opt_proccessor (getopt_out opt_out, RUN_CONDITIONS *run_conds)
             return 0;
         }
 
-        run_conds->output_file_selected = true;
+        run_conds->is_output_file_selected = true;
         run_conds->output_file = opt_out.optarg;
         return 1;
     }
 
     printf("Option %s found in optstring but not in set_run_flags()", opt_out.opt);
-            return 0;
+
+    return 0;
 }
 
 void print_help()
 {
     printf(
         "Use:\n"
-        "-s <s_name>, --sorting <s_name> to sort according to s_name: beg_ascend, end_ascend, untouched (can use multiple)\n"
+        "-s <s_name>, --sorting <s_name> to sort according to <s_name>: {beg_ascend, end_ascend, unsorted} (can use multiple)\n"
         "-i <filename>, --input-file <filename> to set input stream to filename\n"
         "-o <filename>, --output-file <filename> to set output stream to filename\n"
     );

@@ -13,31 +13,31 @@ enum ctor_errs {
     N_LINES_CALLOC = -4
 };
 
-void text_ctor_revert (text_t* text, ctor_errs err_num);
-void text_ctor_alarm(ctor_errs err_num);
-void set_lines (text_t* text);
+static void text_ctor_revert (text_t* text, ctor_errs err_num);
+static void text_ctor_alarm (ctor_errs err_num);
+static void set_lines (text_t* text);
 
-void text_ctor(text_t* text, FILE* orig_file_p)
+bool text_ctor (text_t* text, FILE* orig_file_p)
 {
     size_t size = get_text_length(orig_file_p);
     if (size == (size_t)-1)
     {
         text_ctor_revert(text, N_TEXT_LENGTH);
-        return;
+        return 0;
     }
-    text->buffer = (char*)calloc(size + 1, sizeof(*text->buffer));
 
+    text->buffer = (char*)calloc(size + 1, sizeof(*text->buffer));
     if (text->buffer == NULL)
     {
         text_ctor_revert(text, N_BUFF_CALLOC);
-        return;
+        return 0;
     }
 
     size = fread(text->buffer, sizeof(*text->buffer), size, orig_file_p);
     if (ferror(orig_file_p))
     {
         text_ctor_revert(text, N_FREAD);
-        return;
+        return 0;
     }
     text->length = size;
 
@@ -53,65 +53,63 @@ void text_ctor(text_t* text, FILE* orig_file_p)
     if (text->lines == NULL)
     {
         text_ctor_revert(text, N_LINES_CALLOC);
-        return;
+        return 0;
     }
 
     set_lines(text);
+
+    return 1;
 }
 
-void set_lines (text_t* text)
+static void set_lines (text_t* text)
 {
     text->lines[0].ptr = text->buffer;
 
     char* l_beg = text->buffer;
 
-    for (size_t c = 0, line = 0, len = 0; c < text->length; c++)
+    for (size_t ind = 0, line = 0, len = 0; ind < text->length; ind++)
     {
-        if (text->buffer[c] == '\n')
+        if (text->buffer[ind] == '\n')
         {
-            text->buffer[c] = '\0';
+            text->buffer[ind] = '\0';
 
             text->lines[line].len = len - 1;
             text->lines[line].ptr = l_beg;
             line++;
 
-            l_beg = text->buffer + c + 1;
+            l_beg = text->buffer + ind + 1;
             len = 0;
         }
         len++;
     }
 }
 
-void text_ctor_revert (text_t* text, ctor_errs err_code)
+static void text_ctor_revert (text_t* text, ctor_errs err_code)
 {
-    for (int i = err_code; i < 0; i++)
+    switch (err_code)
     {
-        switch (i)
+        case N_LINES_CALLOC:
         {
-            case N_LINES_CALLOC:
-            {
-                text->length = 0;
-                text->line_n = 0;
-                [[fallthrough]];
-            }
-            case N_FREAD:
-            {
-                free(text->buffer);
-                text->buffer = NULL;
-                [[fallthrough]];
-            }
-            default:
-                break;
+            text->length = 0;
+            text->line_n = 0;
+            [[fallthrough]];
         }
+        case N_FREAD:
+        {
+            free(text->buffer);
+            text->buffer = NULL;
+            [[fallthrough]];
+        }
+        default:
+            break;
     }
 
     text_ctor_alarm(err_code);
 }
 
-void text_ctor_alarm(ctor_errs err_code)
+static void text_ctor_alarm(ctor_errs err_code)
 {
     printf("Error occured in text_ctor() (err_code = %d). Break.\n", err_code);
-    exit(err_code);
 }
 
 void text_dtor(text_t* text)
@@ -140,9 +138,9 @@ size_t count_lines(text_t* text)
 {
     size_t cnt = 0;
 
-    for (size_t c = 0; c < text->length; c++)
+    for (size_t ind = 0; ind < text->length; ind++)
     {
-        if (text->buffer[c] == '\n')
+        if (text->buffer[ind] == '\n')
             cnt++;
     }
 
@@ -153,7 +151,7 @@ void print_text_lines (text_t* text, FILE* out_f)
 {
     for (size_t i = 0; i < text->line_n; i++)
     {
-        fputs(text->lines[i].ptr, out_f); // FUCK: change (why???)
+        fputs(text->lines[i].ptr, out_f);
         fputc('\n', out_f);
     }
 }
