@@ -1,6 +1,8 @@
 #ifndef TEXT_T_H
 #define TEXT_T_H
 
+#include <stdio.h>
+
 typedef enum {
     UNSORTED = 0,
     BEG_ASC =   1,

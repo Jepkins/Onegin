@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "flagging.h"
+#include "onegin_flagging.h"
 #include "text_t.h"
 #include "sorting.h"
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
     StartConfig run_config = {};
 
-    if (!run_setup(argc, argv, &run_config))
+    if (!onegin_setup(argc, argv, &run_config))
         return -1;
 
     int ret_value = read_sort_write(&run_config);

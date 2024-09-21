@@ -3,10 +3,6 @@
 
 #include "text_t.h"
 
-static const char DEFAULT_INPUT_FILE[] = "data/text_rus_norm.txt";
-static const char DEFAULT_OUTPUT_FILE[] = "data/output.txt";
-static const size_t MAX_N_SORTS = 10;
-
 typedef enum {
     ARGV_END =        -10,
     NOT_AN_OPT =       -1,
@@ -35,17 +31,11 @@ typedef struct {
     bool flagging_error;
 } StartConfig;
 
-bool run_setup(int argc, char** argv, StartConfig* run_conds);
+typedef bool (*opt_proccessor_t) (getopt_out opt_out, StartConfig *run_conds);
 
 GetoptResult getopt_custom(int argc, char ** const argv, const char* optstring, getopt_out* opt_out);
 GetoptResult getoptarg(int argc, char ** const argv, getopt_out* opt_out);
 
-bool set_run_flags(GetoptResult opt_flag, getopt_out opt_out, StartConfig *run_conds);
-
-bool opt_proccessor (getopt_out opt_out, StartConfig *run_conds);
-
-void print_help();
-
-bool normalizer_setup(int argc, char** argv, StartConfig* run_conds);
+bool check_opt_flag(GetoptResult opt_flag, getopt_out opt_out);
 
 #endif // FLAGGING_H

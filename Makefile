@@ -54,7 +54,7 @@ $(BUILD_DIR)%.o: %.cpp
 
 
 clean:
-	del /f /s *.o *.exe
+	del /f /s *.o *.exe *.d
 
 echo:
 	@echo $(CFLAGS)

@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "text_t.h"
-#include "flagging.h"
+#include "normalizer_flagging.h"
 
 static void print_normal_lines (text_t* text, FILE* outstream);
 static bool is_normal_line (line_t* line);
