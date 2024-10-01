@@ -8,8 +8,8 @@
 static void print_normal_lines (text_t* text, FILE* outstream);
 static bool is_normal_line (line_t* line);
 
-static const size_t MINLINE = 10;
-static const size_t MAXLINE = 50;
+static const size_t MIN_LINE_LEN = 10;
+static const size_t MAX_LINE_LEN = 50;
 static const size_t TAB_N = 2;
 
 int main(int argc, char *argv[])
@@ -37,26 +37,24 @@ static void print_normal_lines (text_t* text, FILE* outstream)
     {
         if (is_normal_line(&text->lines[i]))
         {
-            fputs(text->lines[i].ptr, outstream);
-            fprintf(outstream, "\n");
+            utf8_putline(text->lines[i].ptr, outstream);
         }
     }
 }
 
 static bool is_normal_line (line_t* line)
 {
-    size_t length = 0;
     size_t t = 0;
     bool alphabetic_c_met = 0;
-    if ((length = line->len) < MINLINE || length > MAXLINE)
+    if (line->len < MIN_LINE_LEN || line->len > MAX_LINE_LEN)
         return false;
 
     for (size_t j = 0; j < line->len; j++)
     {
-        if (line->ptr[j] == '\t')
+        if (line->ptr[j].code == 0x9)
             t++;
 
-        if (isalpha(line->ptr[j]))
+        if (utf8_isalphabetic(line->ptr[j].code))
         {
             alphabetic_c_met = 1;
             break;

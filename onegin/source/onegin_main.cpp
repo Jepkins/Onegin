@@ -5,6 +5,7 @@
 #include <time.h>
 #include "onegin_flagging.h"
 #include "text_t.h"
+#include "comparators.h"
 #include "sorting.h"
 
 // WORK: LAST TASK, CP1251, char -> isalpha... not work, cast: char (-128, 127) -> unsigned char (0, 255) -> int (0, 255)
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
 {
     time_t start = clock();
 
-    StartConfig run_config = {};
+    StartConfig run_config = {.encoding = UTF8};
 
     if (!onegin_setup(argc, argv, &run_config))
         return -1;
@@ -25,7 +26,7 @@ int main(int argc, char *argv[])
     int ret_value = read_sort_write(&run_config);
 
     time_t end = clock();
-    printf("TIME = %lld\n", end-start);
+    printf("TIME = %lld\n", end - start);
 
     return ret_value;
 }
@@ -46,6 +47,7 @@ int read_sort_write (StartConfig* run_config)
     fclose(input_file);
 
     FILE* output_file = fopen(run_config->output_file, "w");
+
     if (output_file == NULL)
     {
         printf("Could not open file \"%s\"", run_config->output_file);

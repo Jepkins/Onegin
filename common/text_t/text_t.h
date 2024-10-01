@@ -1,6 +1,7 @@
 #ifndef TEXT_T_H
 #define TEXT_T_H
 
+#include "encodings.h"
 #include <stdio.h>
 
 typedef enum {
@@ -10,12 +11,12 @@ typedef enum {
 } Sorting;
 
 typedef struct {
-    char* ptr;
+    utf8_rune_t* ptr;
     size_t len;
 } line_t;
 
 typedef struct {
-    char* buffer;
+    utf8_rune_t* buffer;
     size_t length;
     line_t* lines;
     size_t line_n;
@@ -25,10 +26,11 @@ typedef struct {
 bool text_ctor(text_t* text, FILE* text_file_orig);
 void text_dtor(text_t* text);
 
-size_t count_lines(text_t* text);
 size_t get_text_length(FILE* text_p_orig);
 
 void print_buff (text_t* text, FILE* out_f);
 void print_text_lines (text_t* text, FILE* out_f);
+
+void text_dump (text_t* text, FILE* ostream);
 
 #endif // TEXT_T_H

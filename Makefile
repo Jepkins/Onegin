@@ -25,7 +25,7 @@ EXECUTABLES = $(ONEGIN_EXEC) $(NORM_EXEC)
 -include $(NORM_DIR)config.mk
 -include $(COMMON_DIR)config.mk
 
-.PHONY: common flagging sorting text_t
+.PHONY: common
 .PHONY: onegin
 .PHONY: normalizer
 
@@ -36,9 +36,6 @@ onegin: $(ONEGIN_EXEC)
 normalizer: $(NORM_EXEC)
 
 common: $(COMMON_OBJECTS)
-flagging: $(BUILD_DIR)flagging/flagging.o
-sorting: $(BUILD_DIR)sorting/sorting.o
-text_t:	$(BUILD_DIR)text_t/text_t.o
 
 $(ONEGIN_EXEC): $(COMMON_OBJECTS) $(ONEGIN_OBJECTS)
 	powershell if (! (Test-Path -Path $(@D))) {(md $(@D))}
@@ -57,5 +54,4 @@ clean:
 	del /f /s *.o *.exe *.d
 
 echo:
-	@echo $(CFLAGS)
-	@echo $(COMMON_OBJECTS)
+	

@@ -5,7 +5,7 @@
 
 bool onegin_setup(int argc, char** argv, StartConfig* run_conds)
 {
-    const char* optstring = " -i: -o: -s: --input_f: --output_f: --sorting: ";
+    const char* optstring = " -i: -o: -s: -e: --input_f: --output_f: --sorting: --encoding: ";
     // !!! always starts and ends with ' ', short options must be before long ones, do not use ':' in option names
 
     getopt_out opt_out = {.optind = 1};
@@ -114,7 +114,31 @@ bool onegin_opt_proccessor (getopt_out opt_out, StartConfig *run_conds)
         return 1;
     }
 
-    printf("Option %s found in optstring but not in set_run_flags()", opt_out.opt);
+    if (!strcmp(opt_out.opt, "-e") || !strcmp(opt_out.opt, "--encoding"))
+    {
+        if (run_conds->encoding != DEFAULT)
+        {
+            printf("Can not select multiple encodings! (Do not use multiple -e, --encoding)\n");
+            return 0;
+        }
+
+        if (!strcmp(opt_out.optarg, "utf8"))
+        {
+            run_conds->encoding = UTF8;
+            return 1;
+        }
+
+        if (!strcmp(opt_out.optarg, "cp1251"))
+        {
+            run_conds->encoding = CP1251;
+            return 1;
+        }
+
+        printf("Unknown encoding name: %s\n", opt_out.optarg);
+        return 0;
+    }
+
+    printf("Option %s found in optstring but not in opt_proccessor()", opt_out.opt);
 
     return 0;
 }

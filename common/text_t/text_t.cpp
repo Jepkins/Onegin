@@ -1,7 +1,9 @@
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "text_t.h"
@@ -13,41 +15,47 @@ enum ctor_errs {
     N_LINES_CALLOC = -4
 };
 
+static utf8_rune_t UTF8_n = {0x0A000000, 0xA, 1};
+
+const size_t MAXLINE = 1000;
+
 static void text_ctor_revert (text_t* text, ctor_errs err_num);
 static void text_ctor_alarm (ctor_errs err_num);
 static void set_lines (text_t* text);
 
 bool text_ctor (text_t* text, FILE* orig_file_p)
 {
-    size_t size = get_text_length(orig_file_p);
-    if (size == (size_t)-1)
+    size_t temp_size = get_text_length(orig_file_p);
+    if (temp_size == (size_t)-1)
     {
         text_ctor_revert(text, N_TEXT_LENGTH);
         return 0;
     }
 
-    text->buffer = (char*)calloc(size + 1, sizeof(*text->buffer));
+    text->buffer = (utf8_rune_t*)calloc(temp_size + 1, sizeof(*text->buffer));
     if (text->buffer == NULL)
     {
         text_ctor_revert(text, N_BUFF_CALLOC);
         return 0;
     }
 
-    size = fread(text->buffer, sizeof(*text->buffer), size, orig_file_p);
+    size_t size = 0, line_n = 0;
+    while (!feof(orig_file_p))
+    {
+        size_t incr = utf8_getline(text->buffer + size, MAXLINE, orig_file_p);
+        if (incr > 0)
+        {
+            size += incr + 1;
+            line_n++;
+        }
+    }
     if (ferror(orig_file_p))
     {
         text_ctor_revert(text, N_FREAD);
         return 0;
     }
     text->length = size;
-
-    text->line_n = count_lines(text);
-    if (text->length == 0 || text->buffer[text->length - 1] != '\n')
-    {
-        text->buffer[text->length] = '\0';
-        text->length++;
-        text->line_n++;
-    }
+    text->line_n = line_n;
 
     text->lines = (line_t*)calloc(text->line_n + 1, sizeof(*text->lines));
     if (text->lines == NULL)
@@ -65,13 +73,14 @@ static void set_lines (text_t* text)
 {
     text->lines[0].ptr = text->buffer;
 
-    char* l_beg = text->buffer;
+    utf8_rune_t* l_beg = text->buffer;
 
     for (size_t ind = 0, line = 0, len = 0; ind < text->length; ind++)
     {
-        if (text->buffer[ind] == '\n')
+        if (utf8_isnull(&text->buffer[ind]))
         {
-            text->buffer[ind] = '\0';
+            text->buffer[ind].bits = 0;
+            text->buffer[ind].code = 0;
 
             text->lines[line].len = len - 1;
             text->lines[line].ptr = l_beg;
@@ -134,25 +143,12 @@ size_t get_text_length(FILE* orig_file_p)
     return (size_t)statbuf.st_size;
 }
 
-size_t count_lines(text_t* text)
-{
-    size_t cnt = 0;
-
-    for (size_t ind = 0; ind < text->length; ind++)
-    {
-        if (text->buffer[ind] == '\n')
-            cnt++;
-    }
-
-    return cnt;
-}
 
 void print_text_lines (text_t* text, FILE* out_f)
 {
     for (size_t i = 0; i < text->line_n; i++)
     {
-        fputs(text->lines[i].ptr, out_f);
-        fputc('\n', out_f);
+        utf8_putline(text->lines[i].ptr, out_f);
     }
 }
 
@@ -160,10 +156,37 @@ void print_buff (text_t* text, FILE* out_f)
 {
     for (size_t i = 0; i < text->length; i++)
     {
-        if (text->buffer[i] == '\0')
-            fputc('\n', out_f);
+        if (text->buffer[i].code == 0)
+            utf8_putrune(&UTF8_n, out_f);
 
         else
-            fputc(text->buffer[i], out_f);
+            utf8_putrune(&text->buffer[i], out_f);
     }
+}
+
+void text_dump (text_t* text, FILE* ostream)
+{
+    assert(text && ostream);
+    fprintf(ostream, "TEXT_DUMP, time = %ld\n", clock());
+    fprintf(ostream, "text->length = %lld\n", text->length);
+    fprintf(ostream, "text->line_n = %lld\n", text->line_n);
+    fprintf(ostream, "text->state code = %d\n", text->state);
+
+    fprintf(ostream, "text->buffer:\n{\n");
+    for (size_t i = 0; i < text->length; i++)
+    {
+        fprintf(ostream, "[%lld] = ", i);
+        utf8_putrune(text->buffer + i, ostream);
+        fprintf(ostream, "(code = %d)\n", text->buffer[i].code);
+        fprintf(ostream, "(width = %d)\n", text->buffer[i].width);
+    }
+    fprintf(ostream, "}\n\n");
+
+    fprintf(ostream, "text->lines:\n{\n");
+    for (size_t i = 0; i < text->line_n; i++)
+    {
+        fprintf(ostream, "[%lld](%p) = ", i, (void*)text->lines[i].ptr);
+        utf8_putline(text->lines[i].ptr, ostream);
+    }
+    fprintf(ostream, "}\n\n");
 }
