@@ -144,11 +144,6 @@ void utf8_getrune (utf8_rune_t* r, FILE* istream)
     r->code = utf8_decode(r->bits);
 }
 
-void dump_rune (utf8_rune_t* r)
-{
-    printf("dump: bits = %x, code = %x, width = %d\n", r->bits, r->code, r->width); // MORON: nessesary?
-}
-
 size_t utf8_getline (utf8_rune_t* buf, size_t maxline, FILE* istream)
 {
     size_t i = 0;

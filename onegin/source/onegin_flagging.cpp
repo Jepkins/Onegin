@@ -40,10 +40,8 @@ bool onegin_setup(int argc, char** argv, StartConfig* run_conds)
     return 1;
 }
 
-// FUCK: copy
 bool onegin_opt_proccessor (getopt_out opt_out, StartConfig *run_conds)
 {
-    // FUCK: think about it
     if (!strcmp(opt_out.opt, "-s") || !strcmp(opt_out.opt, "--sorting"))
     {
         if (run_conds->sorts_n == MAX_N_SORTS)

@@ -36,10 +36,8 @@ bool normalizer_setup(int argc, char** argv, StartConfig* run_conds)
     return 1;
 }
 
-// FUCK: copy
 bool normalizer_opt_proccessor (getopt_out opt_out, StartConfig *run_conds)
 {
-    // FUCK: think about it
     if (!strcmp(opt_out.opt, "-i") || !strcmp(opt_out.opt, "--input_f"))
     {
         if (run_conds->is_input_file_selected)

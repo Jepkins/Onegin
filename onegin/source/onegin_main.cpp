@@ -8,8 +8,6 @@
 #include "comparators.h"
 #include "sorting.h"
 
-// WORK: LAST TASK, CP1251, char -> isalpha... not work, cast: char (-128, 127) -> unsigned char (0, 255) -> int (0, 255)
-// WORK: utf8, 1-4byte, char32_t + additional funcs with the type, fread -> manually to char32_t array
 
 int read_sort_write (StartConfig* run_config);
 int sort_write(text_t* text, StartConfig* run_config, FILE* output_file);

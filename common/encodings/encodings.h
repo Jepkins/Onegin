@@ -48,6 +48,4 @@ uint32_t utf8_cyrillic_toupper (char32_t bits);
 uint32_t utf8_cyrillic_tolower (uint32_t code);
 uint32_t utf8_cyrillic_tolower (char32_t bits);
 
-void dump_rune (utf8_rune_t* r);
-
 #endif //ENCODINGS_H
