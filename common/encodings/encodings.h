@@ -3,6 +3,7 @@
 
 #include <uchar.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct {
     char32_t bits;

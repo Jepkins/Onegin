@@ -150,6 +150,7 @@ void print_text_lines (text_t* text, FILE* out_f)
     {
         utf8_putline(text->lines[i].ptr, out_f);
     }
+    fprintf(out_f, "\n\n\n");
 }
 
 void print_buff (text_t* text, FILE* out_f)
@@ -168,14 +169,14 @@ void text_dump (text_t* text, FILE* ostream)
 {
     assert(text && ostream);
     fprintf(ostream, "TEXT_DUMP, time = %ld\n", clock());
-    fprintf(ostream, "text->length = %lld\n", text->length);
-    fprintf(ostream, "text->line_n = %lld\n", text->line_n);
+    fprintf(ostream, "text->length = %ld\n", text->length);
+    fprintf(ostream, "text->line_n = %ld\n", text->line_n);
     fprintf(ostream, "text->state code = %d\n", text->state);
 
     fprintf(ostream, "text->buffer:\n{\n");
     for (size_t i = 0; i < text->length; i++)
     {
-        fprintf(ostream, "[%lld] = ", i);
+        fprintf(ostream, "[%ld] = ", i);
         utf8_putrune(text->buffer + i, ostream);
         fprintf(ostream, "(code = %d)\n", text->buffer[i].code);
         fprintf(ostream, "(width = %d)\n", text->buffer[i].width);
@@ -185,7 +186,7 @@ void text_dump (text_t* text, FILE* ostream)
     fprintf(ostream, "text->lines:\n{\n");
     for (size_t i = 0; i < text->line_n; i++)
     {
-        fprintf(ostream, "[%lld](%p) = ", i, (void*)text->lines[i].ptr);
+        fprintf(ostream, "[%ld](%p) = ", i, (void*)text->lines[i].ptr);
         utf8_putline(text->lines[i].ptr, ostream);
     }
     fprintf(ostream, "}\n\n");

@@ -16,12 +16,12 @@ GetoptResult getopt_custom(int argc, char ** const argv, const char *optstring, 
     if (word_length < 2 || word[0] != '-' || (word_length == 2 && word[1] == '-') || (word_length > 2 && word[1] != '-'))
         return NOT_AN_OPT;
 
-    char* opt_pointer = strstr(optstring, word);
+    const char* opt_pointer = strstr(optstring, word);
 
     if (opt_pointer == NULL)
         return OPT_UNKNOWN;
 
-    if (opt_pointer == optstring || opt_pointer[word_length] == NULL)
+    if (opt_pointer == optstring || opt_pointer[word_length] == '0')
         return INVALID_OPTSTR;
 
     if (opt_pointer[-1] != ' ' || (opt_pointer[word_length] != ':' && opt_pointer[word_length] != ' '))

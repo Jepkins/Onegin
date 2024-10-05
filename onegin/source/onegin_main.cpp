@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     int ret_value = read_sort_write(&run_config);
 
     time_t end = clock();
-    printf("TIME = %lld\n", end - start);
+    printf("TIME = %ld\n", end - start);
 
     return ret_value;
 }
@@ -64,31 +64,29 @@ int sort_write(text_t* text, StartConfig* run_config, FILE* output_file)
 {
     for (size_t i = 0; i < run_config->sorts_n; i++)
     {
-        if (text->state == run_config->sorts[i])
-        {
-            print_text_lines(text, output_file);
-            continue;
-        }
+        bool is_sorted = text->state == run_config->sorts[i];
 
         switch (run_config->sorts[i])
         {
             case BEG_ASC:
             {
-                fprintf(output_file, "\n\n\nSorting: beg_ascend\n");
-                text_sort(text, comp_beg_ascend);
+                fprintf(output_file, "Sorting: beg_ascend\n");
+                if (!is_sorted)
+                    text_sort(text, comp_beg_ascend);
                 print_text_lines(text, output_file);
                 break;
             }
             case END_ASC:
             {
-                fprintf(output_file, "\n\n\nSorting: end_ascend\n");
-                text_sort(text, comp_end_ascend);
+                fprintf(output_file, "Sorting: end_ascend\n");
+                if (!is_sorted)
+                    text_sort(text, comp_end_ascend);
                 print_text_lines(text, output_file);
                 break;
             }
             case UNSORTED:
             {
-                fprintf(output_file, "\n\n\nSorting: unsorted\n");
+                fprintf(output_file, "Sorting: unsorted\n");
                 print_buff(text, output_file);
                 break;
             }
