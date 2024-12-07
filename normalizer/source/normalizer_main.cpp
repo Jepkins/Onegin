@@ -24,39 +24,44 @@ int main(int argc, char *argv[])
     fclose(in);
 
 
-    FILE* outstream = fopen(run_config.output_file, "w");
-    print_normal_lines(&text, outstream);
-    fclose(outstream);
+    FILE* out = fopen(run_config.output_file, "w");
+    print_normal_lines(&text, out);
+    fclose(out);
 
     return 0;
 }
 
 static void print_normal_lines (text_t* text, FILE* outstream)
 {
+    size_t cnt = 0;
     for (size_t i = 0; i < text->line_n; i++)
     {
         if (is_normal_line(&text->lines[i]))
         {
+            cnt++;
             utf8_putline(text->lines[i].ptr, outstream);
         }
     }
+    printf("Total lines: %zu\n", cnt);
 }
 
 static bool is_normal_line (line_t* line)
 {
     size_t t = 0;
-    bool alphabetic_c_met = 0;
+    bool alphabetic_c_met = false;
     if (line->len < MIN_LINE_LEN || line->len > MAX_LINE_LEN)
+    {
         return false;
+    }
 
     for (size_t j = 0; j < line->len; j++)
     {
-        if (line->ptr[j].code == 0x9)
+        if (line->ptr[j] == '\t')
             t++;
 
-        if (utf8_isalphabetic(line->ptr[j].code))
+        if (utf8_isalphabetic(line->ptr[j]))
         {
-            alphabetic_c_met = 1;
+            alphabetic_c_met = true;
             break;
         }
     }

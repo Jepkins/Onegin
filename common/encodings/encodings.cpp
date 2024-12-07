@@ -3,188 +3,183 @@
 #include <stdio.h>
 #include "encodings.h"
 
+static uint8_t utf8_cwidth (utf8_code_t c);
+static uint8_t utf8_bwidth (utf8_rune_t c);
 
-const uint32_t LAST_6BITS_MASK = 0x3f;
-const uint32_t LAST_BYTE_MASK = 0xff;
+static bool utf8_iscyrillic (utf8_code_t code);
+static utf8_code_t utf8_cyrillic_toupper (utf8_code_t code);
+static utf8_code_t utf8_cyrillic_tolower (utf8_code_t code);
 
-static utf8_rune_t UTF8_n = {0x0A000000, 0xA, 1};
+static const utf8_code_t FIRST_1BIT_MASK  = 0x80;
+static const utf8_code_t FIRST_2BITS_MASK = 0xC0;
+static const utf8_code_t FIRST_3BITS_MASK = 0xE0;
+static const utf8_code_t FIRST_4BITS_MASK = 0xF0;
+static const utf8_code_t FIRST_5BITS_MASK = 0xF8;
 
-uint32_t utf8_decode (char32_t bits)
+static const utf8_code_t LAST_6BITS_MASK = 0x3F;
+static const utf8_code_t LAST_BYTE_MASK  = 0xFF;
+
+utf8_code_t utf8_decode (utf8_rune_t rune)
 {
-    uint8_t width = utf8_bwidth(bits);
-    uint32_t code = 0;
+    uint8_t width = utf8_bwidth(rune);
+    utf8_code_t code = 0;
 
-    bits = bits >> 8*(4 - width);
+    code += (rune & (LAST_BYTE_MASK >> width)) << 6*(width - 1);
 
     for (uint8_t i = 1; i < width; i++)
     {
-        code += (bits & LAST_6BITS_MASK) << 6*(i - 1);
-        bits = bits >> 8;
+        rune = rune >> 8;
+        code += (rune & LAST_6BITS_MASK) << 6*(width - i - 1);
     }
-
-    code += (bits & (LAST_BYTE_MASK >> width)) << 6*(width - 1);
 
     return code;
 }
 
-char32_t utf8_encode (uint32_t code)
+utf8_rune_t utf8_encode (utf8_code_t code)
 {
     uint8_t width = utf8_cwidth(code);
-    char32_t bits = 0;
+    char32_t rune = 0;
 
     for (uint8_t i = 1; i < width; i++)
     {
-        bits += (0x80 + (code & LAST_6BITS_MASK)) << 8*(i - 1);
+        rune += (FIRST_1BIT_MASK + (code & LAST_6BITS_MASK)) << 8 * (width - i);
         code = code >> 6;
     }
 
-    bits += (((width != 1)? ~(LAST_BYTE_MASK >> width) : 0) + code) << 8*(width - 1);
+    rune += (((width != 1)? ~(LAST_BYTE_MASK >> width) : 0) + code);
 
-    return bits;
+    return rune;
 }
 
-uint8_t utf8_cwidth (uint32_t c)
+static uint8_t utf8_cwidth (utf8_code_t c)
 {
-    if (c >= 200000)
-        return 0;
-
     if (c >= 0x10000)
         return 4;
+
     if (c >= 0x800)
         return 3;
+
     if (c >= 0x80)
         return 2;
 
     return 1;
 }
 
-uint8_t utf8_bwidth (char32_t c)
+static uint8_t utf8_bwidth (utf8_rune_t c)
 {
-    if (!(c >> (sizeof(c)*8-1)))
+    c = c & LAST_BYTE_MASK;
+
+    if ((c & FIRST_1BIT_MASK) == 0)
         return 1;
 
-    c = c << 1;
-    uint8_t w = 1;
+    if (((c ^ FIRST_2BITS_MASK) & FIRST_3BITS_MASK) == 0)
+        return 2;
 
-    while (c >> (sizeof(c)*8-1))
-    {
-        w++;
-        c = c << 1;
-    }
-    if (w < 5)
-    {
-        return w;
-    }
-    else
-    {
-        return 0;
-    }
+    if (((c ^ FIRST_3BITS_MASK) & FIRST_4BITS_MASK) == 0)
+        return 3;
 
+    if (((c ^ FIRST_4BITS_MASK) & FIRST_5BITS_MASK) == 0)
+        return 4;
+
+    return 0;
 }
 
-bool check_following_bytes(char32_t bits)
+bool utf8_validate_rune(char32_t rune, uint8_t width) // MIND: = 0
 {
-    uint8_t width = utf8_bwidth(bits);
-    bits = bits >> 8*(4 - width);
+    if (width == 0)
+    {
+        width = utf8_bwidth(rune);
+    }
+
+    if (width == 0)
+        return false;
+
     for (uint8_t i = 1; i < width; i++)
     {
-        if ((bits & 0xC0) ^ 0x80)
+        rune = rune >> 8;
+        if (((rune & FIRST_2BITS_MASK) ^ FIRST_1BIT_MASK) != 0)
             return false;
-        bits = bits >> 8;
     }
+
     return true;
 }
 
-void utf8_set_null (utf8_rune_t* r)
+utf8_rune_t utf8_getrune (FILE* istream)
 {
-    r->width = 1;
-    r->bits = 0;
-    r->code = 0;
-}
-
-bool utf8_isnull (utf8_rune_t* r)
-{
-    return r->width == 1 &&
-           r->bits == 0 &&
-           r->code == 0;
-}
-
-void utf8_set_by_code (utf8_rune_t* r, uint32_t code)
-{
-    r->code = code;
-    r->width = utf8_cwidth(code);
-    r->bits = utf8_encode(code);
-}
-
-
-void utf8_getrune (utf8_rune_t* r, FILE* istream)
-{
-    if(feof(istream))
+    int b = getc(istream);
+    if (b == EOF)
     {
-        utf8_set_by_code(r, (uint32_t)-1);
-        return;
+        return UTF8_EOF;
     }
 
-    unsigned char b = (unsigned char)getc(istream);
+    utf8_rune_t rune = (utf8_rune_t) b;
 
-    r->bits = ((char32_t)b) << 24;
+    uint8_t width = utf8_bwidth(rune);
 
-    r->width = utf8_bwidth(r->bits);
-
-    for (int i = 1; i < r->width && !feof(istream); i++)
+    for (int i = 1; i < width && !feof(istream); i++)
     {
-        b = (unsigned char)getc(istream);
-        r->bits += ((char32_t)b) << (24 - i*8);
+        b = getc(istream);
+        rune += ((utf8_rune_t) b) << (i * 8);
     }
-    if(!check_following_bytes(r->bits))
+
+    if (!utf8_validate_rune(rune))
     {
-        utf8_set_by_code(r, (uint32_t)-1);
-        return;
+        return UTF8_CORRUPT;
     }
-    r->code = utf8_decode(r->bits);
+
+    return rune;
 }
 
-size_t utf8_getline (utf8_rune_t* buf, size_t maxline, FILE* istream)
+size_t utf8_getline (utf8_rune_t* buf, FILE* istream, size_t maxline) // MIND: = -1 ?
 {
     size_t i = 0;
-    for (; i < maxline - 1 && !feof(istream); i++)
+
+    for (; i < maxline - 1; i++)
     {
-        utf8_getrune(buf, istream);
-        if (buf->code == UTF8_n.code || buf->width == 0)
+        *buf = utf8_getrune(istream);
+
+        if (*buf == UTF8_CORRUPT)
+        {
+            fprintf(stderr, "%s: Corrupted text, reading not finished\n", __FUNCTION__);
+            break;
+        }
+
+        if (*buf == '\n' || *buf == UTF8_EOF)
             break;
 
         buf++;
     }
-    utf8_set_null(buf);
+    *buf = '\0';
+
     return i;
 }
 
-void utf8_putrune (utf8_rune_t* r, FILE* ostream)
+void utf8_putrune (utf8_rune_t rune, FILE* ostream)
 {
-    for (int i = 0; i < r->width; i++)
+    uint8_t width = utf8_bwidth(rune);
+
+    fwrite(&rune, sizeof(char), width, ostream);
+}
+
+size_t utf8_putline (utf8_rune_t* rune, FILE* ostream)
+{
+    utf8_rune_t* beg = rune;
+    while (*rune != '\0')
     {
-        fputc((unsigned char)(r->bits >> (3 - i)*8), ostream);
+        utf8_putrune(*rune, ostream);
+        rune++;
     }
+    utf8_putrune('\n', ostream);
+
+    return (size_t)(rune - beg);
 }
 
-size_t utf8_putline (utf8_rune_t* r, FILE* ostream)
+Alphabets utf8_isalphabetic(utf8_rune_t rune)
 {
-    utf8_rune_t* beg = r;
-    while (r->code != 0)
-    {
-        utf8_putrune(r, ostream);
-        r++;
-    }
-    utf8_put_lf(ostream);
-    return (size_t)(r - beg);
+    return utf8_isalphabetic(utf8_decode(rune));
 }
 
-void utf8_put_lf(FILE* ostream)
-{
-    utf8_putrune(&UTF8_n, ostream);
-}
-
-Alphabets utf8_isalphabetic(uint32_t code)
+Alphabets utf8_isalphabetic(utf8_code_t code)
 {
     if (code < 256 && isalpha((int)code))
         return ENGLISH;
@@ -195,58 +190,46 @@ Alphabets utf8_isalphabetic(uint32_t code)
     return NOT_AN_ALPHA;
 }
 
-bool utf8_iscyrillic (uint32_t code)
+static bool utf8_iscyrillic (utf8_code_t code)
 {
     return (code >= 0x400 && code <= 0x4ff);
 }
-bool utf8_iscyrillic (char32_t bits)
-{
-    return utf8_iscyrillic(utf8_decode(bits));
-}
 
-uint32_t utf8_toupper(uint32_t code)
+utf8_code_t utf8_toupper(utf8_code_t code)
 {
     Alphabets alfb = utf8_isalphabetic(code);
     switch (alfb)
     {
         case NOT_AN_ALPHA: return code;
-        case ENGLISH:      return (uint32_t)toupper((int)code);
+        case ENGLISH:      return (utf8_code_t)toupper((int)code);
         case RUSSIAN:      return utf8_cyrillic_toupper(code);
         default:           assert(0 && "Check utf8_isalphabetic return");
     }
 }
-uint32_t utf8_tolower(uint32_t code)
+utf8_code_t utf8_tolower(utf8_code_t code)
 {
     Alphabets alfb = utf8_isalphabetic(code);
     switch (alfb)
     {
         case NOT_AN_ALPHA: return code;
-        case ENGLISH:      return (uint32_t)tolower((int)code);
+        case ENGLISH:      return (utf8_code_t)tolower((int)code);
         case RUSSIAN:      return utf8_cyrillic_tolower(code);
         default:           assert(0 && "Check utf8_isalphabetic return");
     }
 }
 
-uint32_t utf8_cyrillic_toupper (uint32_t code)
+static utf8_code_t utf8_cyrillic_toupper (utf8_code_t code)
 {
     if (code >= 0x430 && code <= 0x44f)
         return code - 0x20;
     else
         return code;
 }
-uint32_t utf8_cyrillic_toupper (char32_t bits)
-{
-    return utf8_decode(utf8_cyrillic_toupper(utf8_decode(bits)));
-}
 
-uint32_t utf8_cyrillic_tolower (uint32_t code)
+static utf8_code_t utf8_cyrillic_tolower (utf8_code_t code)
 {
     if (code >= 0x410 && code <= 0x42f)
         return code + 0x20;
     else
         return code;
-}
-uint32_t utf8_cyrillic_tolower (char32_t bits)
-{
-    return utf8_decode(utf8_cyrillic_toupper(utf8_decode(bits)));
 }

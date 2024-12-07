@@ -31,6 +31,4 @@ size_t get_text_length(FILE* text_p_orig);
 void print_buff (text_t* text, FILE* out_f);
 void print_text_lines (text_t* text, FILE* out_f);
 
-void text_dump (text_t* text, FILE* ostream);
-
 #endif // TEXT_T_H
